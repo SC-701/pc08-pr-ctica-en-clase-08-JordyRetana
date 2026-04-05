@@ -56,14 +56,13 @@ namespace Web.Pages.Seguridad
 
             using var cliente = new HttpClient();
             string endpoint = _configuracion.ObtenerMetodo("ApiSeguridad", "Login");
+
             var respuesta = await cliente.PostAsJsonAsync(endpoint, login);
             var contenido = await respuesta.Content.ReadAsStringAsync();
 
             if (!respuesta.IsSuccessStatusCode)
             {
-                MensajeError = string.IsNullOrWhiteSpace(contenido)
-                    ? "No se pudo iniciar sesión."
-                    : contenido;
+                MensajeError = $"Error {(int)respuesta.StatusCode}: {contenido}";
                 return Page();
             }
 

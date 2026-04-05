@@ -53,6 +53,7 @@ namespace Web.Pages.Seguridad
 
             using var cliente = new HttpClient();
             string endpoint = _configuracion.ObtenerMetodo("ApiSeguridad", "RegistrarUsuario");
+
             var respuesta = await cliente.PostAsJsonAsync(endpoint, solicitud);
             var contenido = await respuesta.Content.ReadAsStringAsync();
 
