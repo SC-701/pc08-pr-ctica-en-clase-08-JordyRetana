@@ -1,0 +1,25 @@
+@page
+@model Web.Pages.Seguridad.LoginModel
+@{ ViewData["Title"] = "Iniciar sesión"; }
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-6 col-xl-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="display-6 mb-2 text-primary"><i class="bi bi-shield-lock-fill"></i></div>
+                    <h1 class="h3 mb-1">Ingreso al sistema</h1>
+                    <p class="text-muted mb-0">Accede para administrar productos de forma segura.</p>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.MensajeExito)) { <div class="alert alert-success">@Model.MensajeExito</div> }
+                @if (!string.IsNullOrWhiteSpace(Model.MensajeError)) { <div class="alert alert-danger">@Model.MensajeError</div> }
+                <form method="post">
+                    <div class="mb-3"><label asp-for="CorreoElectronico" class="form-label">Correo electrónico</label><input asp-for="CorreoElectronico" class="form-control" placeholder="correo@ejemplo.com" /><span asp-validation-for="CorreoElectronico" class="text-danger small"></span></div>
+                    <div class="mb-4"><label asp-for="Contrasenia" class="form-label">Contraseña</label><input asp-for="Contrasenia" type="password" class="form-control" placeholder="Ingresa tu contraseña" /><span asp-validation-for="Contrasenia" class="text-danger small"></span></div>
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión</button>
+                </form>
+                <div class="text-center mt-4"><span class="text-muted">¿No tienes cuenta?</span><a asp-page="/Seguridad/Registro" class="ms-1">Regístrate aquí</a></div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

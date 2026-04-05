@@ -1,0 +1,106 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<section class="home-hero mb-4">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <span class="badge bg-light text-primary mb-3 px-3 py-2 rounded-pill">
+                <i class="bi bi-stars me-1"></i> Plataforma moderna de inventario
+            </span>
+
+            <h1 class="mb-3">Administra tus productos de forma más clara, rápida y visual</h1>
+            <p class="lead mb-4">
+                Controla el stock, consulta precios en colones y dólares, organiza tus subcategorías
+                y mantén toda la información del inventario en un solo lugar.
+            </p>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-page="/Productos/Index" class="btn btn-light btn-lg">
+                    <i class="bi bi-grid me-1"></i> Ver productos
+                </a>
+                <a asp-page="/Productos/Agregar" class="btn btn-outline-light btn-lg">
+                    <i class="bi bi-plus-circle me-1"></i> Nuevo producto
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mt-4 mt-lg-0 text-center">
+            <i class="bi bi-box-seam-fill" style="font-size: 8rem; opacity: 0.22;"></i>
+        </div>
+    </div>
+</section>
+
+<section class="mb-4">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="bi bi-boxes"></i>
+                </div>
+                <div class="metric-value">Inventario</div>
+                <p class="metric-label">Gestiona productos, existencias y categorías de forma centralizada.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="metric-value">Precios</div>
+                <p class="metric-label">Visualiza precios en colones y su equivalente en dólares.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <div class="metric-value">Organización</div>
+                <p class="metric-label">Asocia productos con subcategorías para mantener orden y control.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="module-card">
+                <div class="card-body">
+                    <div class="module-icon">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                    </div>
+                    <h3 class="h4 fw-bold">Módulo de productos</h3>
+                    <p class="text-muted">
+                        Consulta el listado completo, revisa detalles, edita información y elimina registros cuando sea necesario.
+                    </p>
+                    <a asp-page="/Productos/Index" class="btn btn-primary">
+                        Ir al módulo
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="module-card">
+                <div class="card-body">
+                    <div class="module-icon">
+                        <i class="bi bi-plus-square-fill"></i>
+                    </div>
+                    <h3 class="h4 fw-bold">Registro rápido</h3>
+                    <p class="text-muted">
+                        Agrega nuevos productos con nombre, descripción, precio, stock, código de barras y subcategoría.
+                    </p>
+                    <a asp-page="/Productos/Agregar" class="btn btn-success">
+                        Crear producto
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

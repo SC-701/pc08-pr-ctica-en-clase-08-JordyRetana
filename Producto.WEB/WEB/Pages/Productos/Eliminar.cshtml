@@ -1,0 +1,71 @@
+﻿@page "{id:guid}"
+@model Web.Pages.Productos.EliminarModel
+@{
+    ViewData["Title"] = "Eliminar Producto";
+}
+
+@if (Model.Producto == null)
+{
+    <div class="page-card p-4">
+        <div class="alert alert-warning mb-0">
+            No se encontró el producto solicitado.
+        </div>
+    </div>
+}
+else
+{
+    <section class="mb-4">
+        <h2 class="section-title mb-1 text-danger">Eliminar Producto</h2>
+        <p class="section-subtitle mb-0">Esta acción eliminará el registro seleccionado del inventario.</p>
+    </section>
+
+    <div class="delete-card">
+        <div class="delete-card-header">
+            <h3 class="mb-0 fw-bold text-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Confirmación de eliminación
+            </h3>
+        </div>
+
+        <div class="delete-card-body">
+            <p class="mb-4">
+                ¿Deseas eliminar este producto? Esta acción no se puede deshacer.
+            </p>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="detail-label">Producto</div>
+                    <div class="detail-value">@Model.Producto.Nombre</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Subcategoría</div>
+                    <div class="detail-value">@Model.Producto.SubCategoria</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Categoría</div>
+                    <div class="detail-value">@Model.Producto.Categoria</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Código de barras</div>
+                    <div class="detail-value">@Model.Producto.CodigoBarras</div>
+                </div>
+            </div>
+
+            <form method="post">
+                <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-page="./Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" asp-route-id="@Model.Producto.Id" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i> Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}

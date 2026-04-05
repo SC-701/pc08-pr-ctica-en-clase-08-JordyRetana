@@ -1,0 +1,67 @@
+name: Deploy Producto WEB to Azure
+
+env:
+  AZURE_WEBAPP_NAME: PRODUCTOWEBJORDY
+  DOTNET_VERSION: '8.0'
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'Producto.WEB/**'
+      - '.github/workflows/Web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Configurar origen GitHub Packages
+        run: |
+          dotnet nuget remove source github-sc701 || true
+          dotnet nuget add source "https://nuget.pkg.github.com/SC-701/index.json" \
+            --name "github-sc701" \
+            --username "${{ github.actor }}" \
+            --password "${{ secrets.GITHUB_TOKEN }}" \
+            --store-password-in-clear-text
+
+      - name: Restore dependencies
+        run: dotnet restore Producto.WEB/WEB/WEB.csproj
+      - name: Build WEB
+        run: dotnet build Producto.WEB/WEB/WEB.csproj --configuration Release --no-restore
+      - name: Publish WEB
+        run: dotnet publish Producto.WEB/WEB/WEB.csproj -c Release -o ./publish --no-build
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: producto-web
+          path: ./publish
+  deploy:
+    permissions:
+      contents: none
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: PRODUCTO-WEB
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: producto-web
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.PRODUCTOWEBJORDY_PROFILE }}
+          package: .

@@ -1,0 +1,8 @@
+﻿CREATE PROCEDURE SP_Producto_Eliminar
+    @Id UNIQUEIDENTIFIER
+AS
+BEGIN
+    DELETE FROM Producto
+    WHERE Id = @Id;
+END;
+GO

@@ -1,0 +1,78 @@
+﻿@page "{id:guid}"
+@model Web.Pages.Productos.DetalleModel
+@{
+    ViewData["Title"] = "Detalle del Producto";
+}
+
+@if (Model.Producto == null)
+{
+    <div class="page-card p-4">
+        <div class="alert alert-warning mb-0">
+            No se encontró el producto solicitado.
+        </div>
+    </div>
+}
+else
+{
+    <section class="mb-4">
+        <h2 class="section-title mb-1">Detalle del Producto</h2>
+        <p class="section-subtitle mb-0">Consulta la información completa del registro seleccionado.</p>
+    </section>
+
+    <div class="detail-card">
+        <div class="detail-card-header">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h3 class="mb-1 fw-bold">@Model.Producto.Nombre</h3>
+                    <div class="text-muted">@Model.Producto.Descripcion</div>
+                </div>
+                <span class="badge-soft-success">@Model.Producto.SubCategoria</span>
+            </div>
+        </div>
+
+        <div class="detail-card-body">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="detail-label">Categoría</div>
+                    <div class="detail-value">@Model.Producto.Categoria</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Subcategoría</div>
+                    <div class="detail-value">@Model.Producto.SubCategoria</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Precio en colones</div>
+                    <div class="detail-value">₡ @Model.Producto.Precio.ToString("N2")</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Precio en dólares</div>
+                    <div class="detail-value">@(Model.Producto.PrecioUSD.HasValue ? $"$ {Model.Producto.PrecioUSD.Value:N2}" : "-")</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Stock disponible</div>
+                    <div class="detail-value">@Model.Producto.Stock</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Código de barras</div>
+                    <div class="detail-value">@Model.Producto.CodigoBarras</div>
+                </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-page="./Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Regresar
+                </a>
+                <a asp-page="./Editar" asp-route-id="@Model.Producto.Id" class="btn btn-warning">
+                    <i class="bi bi-pencil-square me-1"></i> Editar
+                </a>
+            </div>
+        </div>
+    </div>
+}
