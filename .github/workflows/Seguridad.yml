@@ -1,7 +1,7 @@
 name: Deploy Seguridad API to Azure
 
 env:
-  AZURE_WEBAPP_NAME: SEGURIDADVEHICULOSJORDY
+  AZURE_WEBAPP_NAME: app-seguridad-practica8
   DOTNET_VERSION: '8.0'
 
 on:

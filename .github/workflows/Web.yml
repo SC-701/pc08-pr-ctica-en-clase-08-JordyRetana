@@ -1,7 +1,7 @@
 name: Deploy Producto WEB to Azure
 
 env:
-  AZURE_WEBAPP_NAME: PRODUCTOWEBJORDY
+  AZURE_WEBAPP_NAME: app-producto-web-practica8
   DOTNET_VERSION: '8.0'
 
 on:
