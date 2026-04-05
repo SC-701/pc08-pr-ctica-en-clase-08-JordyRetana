@@ -8,7 +8,12 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'Producto.API/**'
+      - 'Producto.API/API/**'
+      - 'Producto.API/Abstracciones/**'
+      - 'Producto.API/DA/**'
+      - 'Producto.API/Flujo/**'
+      - 'Producto.API/Reglas/**'
+      - 'Producto.API/Servicios/**'
       - '.github/workflows/API.yml'
   workflow_dispatch:
 
@@ -38,7 +43,7 @@ jobs:
             --password "${{ secrets.NUGET_TOKEN }}" \
             --store-password-in-clear-text
 
-      - name: Restaurar dependencias
+      - name: Restaurar dependencias del API
         run: dotnet restore Producto.API/API/API.csproj
 
       - name: Compilar API

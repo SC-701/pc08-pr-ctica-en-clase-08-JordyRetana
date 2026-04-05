@@ -1,28 +1,20 @@
-using Abstracciones.Flujo;
 using Abstracciones.DA;
+using Abstracciones.Flujo;
+
+using Abstracciones.Modelos;
+using Abstracciones.Reglas;
+using Autorizacion.Middleware;
+using DA;
 using DA.Repositorios;
 using Flujo;
-using DA;
-using Abstracciones.Reglas;
-using BC;
-using Abstracciones.Modelos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Reglas;
 using System.Text;
-using Autorizacion.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var tokenConfiguration = builder.Configuration.GetSection("Jwt").Get<TokenConfiguracion>();
-
-if (tokenConfiguration == null)
-{
-    throw new InvalidOperationException("No se encontró la configuración Jwt.");
-}
-
-var jwtIssuer = tokenConfiguration.Issuer;
-var jwtAudience = tokenConfiguration.Audience;
-var jwtKey = tokenConfiguration.key;
+var tokenConfig = builder.Configuration.GetSection("Token").Get<TokenConfiguracion>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -33,13 +25,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            ValidIssuer = tokenConfig!.Issuer,
+            ValidAudience = tokenConfig.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(tokenConfig.key))
         };
     });
-
-builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -51,9 +42,12 @@ builder.Services.AddScoped<IUsuarioFlujo, UsuarioFlujo>();
 builder.Services.AddScoped<IAutenticacionFlujo, AutenticacionFlujo>();
 builder.Services.AddScoped<IAutenticacionBC, AutenticacionReglas>();
 
-builder.Services.AddTransient<Autorizacion.Abstracciones.Flujo.IAutorizacionFlujo, Autorizacion.Flujo.AutorizacionFlujo>();
-builder.Services.AddTransient<Autorizacion.Abstracciones.DA.ISeguridadDA, Autorizacion.DA.SeguridadDA>();
-builder.Services.AddTransient<Autorizacion.Abstracciones.DA.IRepositorioDapper, Autorizacion.DA.Repositorios.RepositorioDapper>();
+builder.Services.AddTransient<Autorizacion.Abstracciones.Flujo.IAutorizacionFlujo,
+    Autorizacion.Flujo.AutorizacionFlujo>();
+builder.Services.AddTransient<Autorizacion.Abstracciones.DA.ISeguridadDA,
+    Autorizacion.DA.SeguridadDA>();
+builder.Services.AddTransient<Autorizacion.Abstracciones.DA.IRepositorioDapper,
+    Autorizacion.DA.Repositorios.RepositorioDapper>();
 
 var app = builder.Build();
 
@@ -64,11 +58,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.AutorizacionClaims();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

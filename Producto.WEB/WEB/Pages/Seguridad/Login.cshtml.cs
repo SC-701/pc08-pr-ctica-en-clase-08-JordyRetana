@@ -1,19 +1,25 @@
-using System.ComponentModel.DataAnnotations;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text.Json;
 using Abstracciones.Interfaces.Reglas;
 using Abstracciones.Modelos;
+using Abstracciones.Modelos.Seguridad;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Reglas;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text.Json;
 
-namespace Web.Pages.Seguridad
+namespace WEB.Pages.Seguridad
 {
     public class LoginModel : PageModel
     {
+        [BindProperty]
+        public Login loginInfo { get; set; } = new();
+
+        [BindProperty]
+        public Token token { get; set; } = new();
+
         private readonly IConfiguracion _configuracion;
 
         public LoginModel(IConfiguracion configuracion)
@@ -21,69 +27,60 @@ namespace Web.Pages.Seguridad
             _configuracion = configuracion;
         }
 
-        [BindProperty]
-        [Required(ErrorMessage = "El correo es requerido")]
-        [EmailAddress(ErrorMessage = "Correo inválido")]
-        public string CorreoElectronico { get; set; } = string.Empty;
-
-        [BindProperty]
-        [Required(ErrorMessage = "La contraseña es requerida")]
-        public string Contrasenia { get; set; } = string.Empty;
-
-        public string? MensajeError { get; set; }
-        public string? MensajeExito { get; set; }
-
         public void OnGet()
         {
-            if (TempData.ContainsKey("MensajeExito"))
-                MensajeExito = TempData["MensajeExito"]?.ToString();
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPost()
         {
             if (!ModelState.IsValid)
                 return Page();
 
-            var hash = Autenticacion.ObtenerHash(Autenticacion.GenerarHash((Contrasenia ?? string.Empty).Trim()));
-            var login = new LoginRequest
+            var hash = Autenticacion.GenerarHash(loginInfo.Contrasena);
+            var passwordHash = Autenticacion.ObtenerHash(hash);
+
+            string endpoint = _configuracion.ObtenerMetodo("ApiEndPointsSeguridad", "Login");
+
+            using var client = new HttpClient();
+            var respuesta = await client.PostAsJsonAsync(endpoint, new LoginBase
             {
-                NombreUsuario = string.Empty,
-                CorreoElectronico = (CorreoElectronico ?? string.Empty).Trim(),
-                PasswordHash = hash.Trim()
+                NombreUsuario = loginInfo.Correo.Split("@")[0],
+                CorreoElectronico = loginInfo.Correo,
+                PasswordHash = passwordHash
+            });
+
+            respuesta.EnsureSuccessStatusCode();
+
+            var opciones = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
             };
 
-            using var cliente = new HttpClient();
-            string endpoint = _configuracion.ObtenerMetodo("ApiSeguridad", "Login");
-            var respuesta = await cliente.PostAsJsonAsync(endpoint, login);
-            var contenido = await respuesta.Content.ReadAsStringAsync();
+            token = JsonSerializer.Deserialize<Token>(
+                await respuesta.Content.ReadAsStringAsync(), opciones) ?? new Token();
 
-            if (!respuesta.IsSuccessStatusCode)
+            if (token.ValidacionExitosa && !string.IsNullOrWhiteSpace(token.AccessToken))
             {
-                MensajeError = string.IsNullOrWhiteSpace(contenido) ? "No se pudo iniciar sesión." : contenido;
-                return Page();
+                JwtSecurityToken? jwtToken = Autenticacion.leerToken(token.AccessToken);
+                var claims = Autenticacion.GenerarClaims(jwtToken, token.AccessToken);
+                await EstablecerAutenticacion(claims);
+
+                var returnUrl = $"{HttpContext.Request.Query["ReturnUrl"]}";
+                if (string.IsNullOrWhiteSpace(returnUrl))
+                    return RedirectToPage("/Index");
+
+                return Redirect(returnUrl);
             }
 
-            var opciones = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var resultado = JsonSerializer.Deserialize<RespuestaLogin>(contenido, opciones);
+            ModelState.AddModelError(string.Empty, "Credenciales incorrectas.");
+            return Page();
+        }
 
-            if (resultado == null || !resultado.ValidacionExitosa || string.IsNullOrWhiteSpace(resultado.AccessToken))
-            {
-                MensajeError = resultado?.Mensaje ?? "Credenciales inválidas.";
-                return Page();
-            }
-
-            JwtSecurityToken? jwtToken = Autenticacion.LeerToken(resultado.AccessToken);
-            List<Claim> claims = Autenticacion.GenerarClaims(jwtToken, resultado.AccessToken);
-
+        private async Task EstablecerAutenticacion(List<Claim> claims)
+        {
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-
-            var urlRedirigir = $"{HttpContext.Request.Query["ReturnUrl"]}";
-            if (string.IsNullOrWhiteSpace(urlRedirigir))
-                return RedirectToPage("/Productos/Index");
-
-            return Redirect(urlRedirigir);
         }
     }
 }
