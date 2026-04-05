@@ -67,7 +67,11 @@ namespace Web.Pages.Seguridad
                 return Page();
             }
 
-            var opciones = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var opciones = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
             var resultado = JsonSerializer.Deserialize<Token>(contenido, opciones);
 
             if (resultado == null || !resultado.ValidacionExitosa || string.IsNullOrWhiteSpace(resultado.AccessToken))
@@ -81,6 +85,7 @@ namespace Web.Pages.Seguridad
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
+
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
             var urlRedirigir = $"{HttpContext.Request.Query["ReturnUrl"]}";

@@ -54,13 +54,11 @@ namespace Web.Pages.Seguridad
             using var cliente = new HttpClient();
             string endpoint = _configuracion.ObtenerMetodo("ApiSeguridad", "RegistrarUsuario");
             var respuesta = await cliente.PostAsJsonAsync(endpoint, solicitud);
+            var contenido = await respuesta.Content.ReadAsStringAsync();
 
             if (!respuesta.IsSuccessStatusCode)
             {
-                var contenido = await respuesta.Content.ReadAsStringAsync();
-                MensajeError = string.IsNullOrWhiteSpace(contenido)
-                    ? "No se pudo registrar el usuario."
-                    : contenido;
+                MensajeError = $"Error {(int)respuesta.StatusCode}: {contenido}";
                 return Page();
             }
 

@@ -16,24 +16,17 @@ namespace Reglas
 
         public string ObtenerMetodo(string seccion, string nombre)
         {
-            var urlBase = ObtenerUrlBase(seccion);
-
-            var metodo = _configuracion
+            var apiConfig = _configuracion
                 .GetSection(seccion)
-                .Get<APIEndPoint>()?
-                .Metodos?
+                .Get<APIEndPoint>();
+
+            var urlBase = apiConfig?.UrlBase ?? string.Empty;
+
+            var metodo = apiConfig?.Metodos?
                 .FirstOrDefault(m => m.Nombre == nombre)?
-                .Valor;
+                .Valor ?? string.Empty;
 
             return $"{urlBase}{metodo}";
-        }
-
-        private string ObtenerUrlBase(string seccion)
-        {
-            return _configuracion
-                .GetSection(seccion)
-                .Get<APIEndPoint>()?
-                .UrlBase ?? string.Empty;
         }
     }
 }
