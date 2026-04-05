@@ -1,7 +1,7 @@
 <Solution>
   <Project Path="Abstracciones/Abstracciones.csproj" />
   <Project Path="API/API.csproj" />
-  <Project Path="BD/BD.sqlproj">
+  <Project Path="BD/BD.sqlproj" Id="a128cade-cb85-4304-8ccd-a4d3a8e0ad6a">
     <Build />
     <Deploy />
   </Project>
