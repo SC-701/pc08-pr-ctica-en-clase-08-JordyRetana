@@ -23,7 +23,7 @@ namespace Reglas
             return builder.ToString();
         }
 
-        public static JwtSecurityToken? LeerToken(string token)
+        public static JwtSecurityToken? leerToken(string token)
         {
             var handler = new JwtSecurityTokenHandler();
             return handler.ReadToken(token) as JwtSecurityToken;
@@ -36,19 +36,13 @@ namespace Reglas
             if (jwtToken == null)
                 return claims;
 
-            var name = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty;
-            var email = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? string.Empty;
-            var idUsuario = jwtToken.Claims.FirstOrDefault(c => c.Type == "IdUsuario")?.Value ?? string.Empty;
-
-            claims.Add(new Claim(ClaimTypes.Name, name));
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, idUsuario));
-            claims.Add(new Claim(ClaimTypes.Email, email));
+            claims.Add(new Claim(ClaimTypes.Name,
+                jwtToken.Claims.First(c => c.Type == ClaimTypes.Name).Value));
+            claims.Add(new Claim(ClaimTypes.NameIdentifier,
+                jwtToken.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value));
+            claims.Add(new Claim(ClaimTypes.Email,
+                jwtToken.Claims.First(c => c.Type == ClaimTypes.Email).Value));
             claims.Add(new Claim("AccessToken", accessToken));
-
-            foreach (var rol in jwtToken.Claims.Where(c => c.Type == ClaimTypes.Role))
-            {
-                claims.Add(new Claim(ClaimTypes.Role, rol.Value));
-            }
 
             return claims;
         }
