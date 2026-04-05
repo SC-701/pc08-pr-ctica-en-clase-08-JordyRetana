@@ -38,33 +38,41 @@ namespace Web.Pages.Seguridad
 
         public async Task<IActionResult> OnPostAsync()
         {
-            if (!ModelState.IsValid)
-                return Page();
-
-            var hash = Autenticacion.ObtenerHash(
-                Autenticacion.GenerarHash((Contrasenia ?? string.Empty).Trim()));
-
-            var solicitud = new UsuarioBase
+            try
             {
-                NombreUsuario = (NombreUsuario ?? string.Empty).Trim(),
-                CorreoElectronico = (CorreoElectronico ?? string.Empty).Trim(),
-                PasswordHash = hash
-            };
+                if (!ModelState.IsValid)
+                    return Page();
 
-            using var cliente = new HttpClient();
-            string endpoint = _configuracion.ObtenerMetodo("ApiSeguridad", "RegistrarUsuario");
+                var hash = Autenticacion.ObtenerHash(
+                    Autenticacion.GenerarHash((Contrasenia ?? string.Empty).Trim()));
 
-            var respuesta = await cliente.PostAsJsonAsync(endpoint, solicitud);
-            var contenido = await respuesta.Content.ReadAsStringAsync();
+                var solicitud = new UsuarioBase
+                {
+                    NombreUsuario = (NombreUsuario ?? string.Empty).Trim(),
+                    CorreoElectronico = (CorreoElectronico ?? string.Empty).Trim(),
+                    PasswordHash = hash
+                };
 
-            if (!respuesta.IsSuccessStatusCode)
+                using var cliente = new HttpClient();
+                string endpoint = _configuracion.ObtenerMetodo("ApiSeguridad", "RegistrarUsuario");
+
+                var respuesta = await cliente.PostAsJsonAsync(endpoint, solicitud);
+                var contenido = await respuesta.Content.ReadAsStringAsync();
+
+                if (!respuesta.IsSuccessStatusCode)
+                {
+                    MensajeError = $"Error {(int)respuesta.StatusCode}: {contenido}";
+                    return Page();
+                }
+
+                TempData["MensajeExito"] = "Usuario registrado correctamente. Ahora puedes iniciar sesión.";
+                return RedirectToPage("/Seguridad/Login");
+            }
+            catch (Exception ex)
             {
-                MensajeError = $"Error {(int)respuesta.StatusCode}: {contenido}";
+                MensajeError = ex.Message;
                 return Page();
             }
-
-            TempData["MensajeExito"] = "Usuario registrado correctamente. Ahora puedes iniciar sesión.";
-            return RedirectToPage("/Seguridad/Login");
         }
     }
 }

@@ -1,6 +1,6 @@
-using Abstracciones.Reglas;
 using Abstracciones.DA;
 using Abstracciones.Modelos;
+using Abstracciones.Reglas;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,8 +11,8 @@ namespace Reglas
 {
     public class AutenticacionReglas : IAutenticacionBC
     {
-        public IConfiguration _configuration;
-        public IUsuarioDA _usuarioDA;
+        private readonly IConfiguration _configuration;
+        private readonly IUsuarioDA _usuarioDA;
         private Usuario? _usuario;
 
         public AutenticacionReglas(IConfiguration configuration, IUsuarioDA usuarioDA)
@@ -21,46 +21,43 @@ namespace Reglas
             _usuarioDA = usuarioDA;
         }
 
-public async Task<Token> LoginAync(LoginBase login)
-{
-    Token respuestaToken = new Token()
-    {
-        AccessToken = string.Empty,
-        ValidacionExitosa = false
-    };
-
-    _usuario = await _usuarioDA.ObtenerUsuario(new Usuario
-    {
-        CorreoElectronico = login.CorreoElectronico,
-        NombreUsuario = null
-    });
-
-    if (_usuario == null)
-    {
-        throw new Exception("No se encontró el usuario.");
-    }
-
-    if (login.PasswordHash != _usuario.PasswordHash)
-    {
-        throw new Exception($"Hash distinto. Enviado: {login.PasswordHash} | Guardado: {_usuario.PasswordHash}");
-    }
-
-    TokenConfiguracion? tokenConfiguracion = _configuration.GetSection("Jwt").Get<TokenConfiguracion>();
-    if (tokenConfiguracion == null)
-    {
-        throw new Exception("No se encontró la configuración Jwt.");
-    }
-
-    JwtSecurityToken token = await GenerarTokenJWT(tokenConfiguracion);
-    respuestaToken.AccessToken = new JwtSecurityTokenHandler().WriteToken(token);
-    respuestaToken.ValidacionExitosa = true;
-
-    return respuestaToken;
-}
-
-        private Task<bool> VerificarHashContraseniaAsync(LoginBase login)
+        public async Task<Token> LoginAync(LoginBase login)
         {
-            return Task.FromResult(login != null && _usuario != null && login.PasswordHash == _usuario.PasswordHash);
+            Token respuestaToken = new Token
+            {
+                AccessToken = string.Empty,
+                ValidacionExitosa = false
+            };
+
+            _usuario = await _usuarioDA.ObtenerUsuario(new UsuarioBase
+            {
+                CorreoElectronico = login.CorreoElectronico,
+                NombreUsuario = login.NombreUsuario ?? string.Empty,
+                PasswordHash = string.Empty
+            });
+
+            if (_usuario == null)
+            {
+                throw new Exception("No se encontró el usuario.");
+            }
+
+            if (login.PasswordHash != _usuario.PasswordHash)
+            {
+                throw new Exception("Credenciales inválidas.");
+            }
+
+            TokenConfiguracion? tokenConfiguracion = _configuration.GetSection("Token").Get<TokenConfiguracion>();
+
+            if (tokenConfiguracion == null)
+            {
+                throw new Exception("No se encontró la configuración Token.");
+            }
+
+            JwtSecurityToken token = await GenerarTokenJWT(tokenConfiguracion);
+            respuestaToken.AccessToken = new JwtSecurityTokenHandler().WriteToken(token);
+            respuestaToken.ValidacionExitosa = true;
+
+            return respuestaToken;
         }
 
         private Task<JwtSecurityToken> GenerarTokenJWT(TokenConfiguracion tokenConfiguracion)
@@ -70,9 +67,9 @@ public async Task<Token> LoginAync(LoginBase login)
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                tokenConfiguracion.Issuer,
-                tokenConfiguracion.Audience,
-                claims,
+                issuer: tokenConfiguracion.Issuer,
+                audience: tokenConfiguracion.Audience,
+                claims: claims,
                 expires: DateTime.Now.AddMinutes(tokenConfiguracion.ExpireMinutes),
                 signingCredentials: credentials
             );
@@ -82,7 +79,7 @@ public async Task<Token> LoginAync(LoginBase login)
 
         private List<Claim> GenerarClaims()
         {
-            List<Claim> claims = new List<Claim>();
+            List<Claim> claims = new();
 
             if (_usuario != null)
             {

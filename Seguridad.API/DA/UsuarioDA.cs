@@ -1,41 +1,88 @@
 ﻿using Abstracciones.DA;
 using Abstracciones.Modelos;
-using System.Data.SqlClient;
 using Dapper;
-using Helpers;
+using System.Data.SqlClient;
 
 namespace DA
 {
     public class UsuarioDA : IUsuarioDA
     {
-        IRepositorioDapper _repositorioDapper;
-        private SqlConnection _sqlConnection;
+        private readonly IRepositorioDapper _repositorioDapper;
 
         public UsuarioDA(IRepositorioDapper repositorioDapper)
         {
             _repositorioDapper = repositorioDapper;
-            _sqlConnection = _repositorioDapper.ObtenerRepositorioDapper();
         }
 
         public async Task<Guid> CrearUsuario(UsuarioBase usuario)
         {
-            var sql = "[AgregarUsuario]";
-            var resultado = await _sqlConnection.ExecuteScalarAsync<Guid>(sql, new { NombreUsuario=usuario.NombreUsuario, PasswordHash=usuario.PasswordHash, CorreoElectronico=usuario.CorreoElectronico });
-            return resultado;
+            Guid id = Guid.NewGuid();
+
+            const string sql = @"
+            INSERT INTO dbo.Usuarios
+            (
+                Id,
+                NombreUsuario,
+                PasswordHash,
+                CorreoElectronico
+            )
+            VALUES
+            (
+                @Id,
+                @NombreUsuario,
+                @PasswordHash,
+                @CorreoElectronico
+            )";
+
+            using SqlConnection sqlConnection = _repositorioDapper.ObtenerRepositorioDapper();
+
+            await sqlConnection.ExecuteAsync(sql, new
+            {
+                Id = id,
+                usuario.NombreUsuario,
+                usuario.PasswordHash,
+                usuario.CorreoElectronico
+            });
+
+            return id;
+        }
+
+        public async Task<Usuario?> ObtenerUsuario(UsuarioBase usuario)
+        {
+            const string sql = @"
+            SELECT TOP 1
+                Id,
+                NombreUsuario,
+                PasswordHash,
+                CorreoElectronico
+            FROM dbo.Usuarios
+            WHERE CorreoElectronico = @CorreoElectronico";
+
+            using SqlConnection sqlConnection = _repositorioDapper.ObtenerRepositorioDapper();
+
+            return await sqlConnection.QueryFirstOrDefaultAsync<Usuario>(sql, new
+            {
+                usuario.CorreoElectronico
+            });
         }
 
         public async Task<IEnumerable<Perfil>> ObtenerPerfilesxUsuario(UsuarioBase usuario)
         {
-            string sql = @"[ObtenerPerfilesxUsuario]";
-            var resultado = await _sqlConnection.QueryAsync<Perfil>(sql, new { CorreoElectronico = usuario.CorreoElectronico, NombreUsuario = usuario.NombreUsuario });
-            return resultado;
-        }
+            const string sql = @"
+            SELECT
+                p.Id,
+                p.Nombre
+            FROM dbo.Usuarios u
+            INNER JOIN dbo.UsuariosPerfiles up ON u.Id = up.UsuarioId
+            INNER JOIN dbo.Perfiles p ON up.PerfilId = p.Id
+            WHERE u.CorreoElectronico = @CorreoElectronico";
 
-        public async Task<Usuario> ObtenerUsuario(UsuarioBase usuario)
-        {
-            string sql = @"[ObtenerUsuario]";
-            var resultado = await _sqlConnection.QueryAsync<Usuario>(sql, new { CorreoElectronico = usuario.CorreoElectronico, NombreUsuario = usuario.NombreUsuario });
-            return resultado.FirstOrDefault();
+            using SqlConnection sqlConnection = _repositorioDapper.ObtenerRepositorioDapper();
+
+            return await sqlConnection.QueryAsync<Perfil>(sql, new
+            {
+                usuario.CorreoElectronico
+            });
         }
     }
 }
