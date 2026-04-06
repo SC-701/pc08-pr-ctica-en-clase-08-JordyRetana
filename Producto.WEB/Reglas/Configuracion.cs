@@ -20,13 +20,17 @@ namespace Reglas
                 .GetSection(seccion)
                 .Get<APIEndPoint>();
 
-            var urlBase = apiConfig?.UrlBase ?? string.Empty;
+            if (apiConfig == null || string.IsNullOrWhiteSpace(apiConfig.UrlBase))
+                throw new Exception($"No se encontró configuración para la sección '{seccion}'.");
 
-            var metodo = apiConfig?.Metodos?
+            var metodo = apiConfig.Metodos?
                 .FirstOrDefault(m => m.Nombre == nombre)?
-                .Valor ?? string.Empty;
+                .Valor;
 
-            return $"{urlBase}{metodo}";
+            if (string.IsNullOrWhiteSpace(metodo))
+                throw new Exception($"No se encontró el método '{nombre}' en la sección '{seccion}'.");
+
+            return $"{apiConfig.UrlBase}{metodo}";
         }
     }
 }
