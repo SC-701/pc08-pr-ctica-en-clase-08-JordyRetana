@@ -1,74 +1,102 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Abstracciones.Interfaces.Flujo;
+using Microsoft.Extensions.Configuration;
 using Servicios.Interfaces;
-using Servicios.Modelos;
-
-using System;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
+using System.Globalization;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Servicios
 {
-
     public class TipoCambioServicio : ITipoCambioServicio
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
 
-        public TipoCambioServicio(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public TipoCambioServicio(HttpClient httpClient, IConfiguration configuration)
         {
-            _httpClientFactory = httpClientFactory;
+            _httpClient = httpClient;
             _configuration = configuration;
         }
 
         public async Task<decimal> ObtenerTipoCambioVentaHoyAsync(CancellationToken ct = default)
         {
-            var urlBase = _configuration["BancoCentralCR:UrlBase"];
-            var token = _configuration["BancoCentralCR:BearerToken"];
+            try
+            {
+                var url = _configuration["BancoCentralCR:UrlBase"];
+                var bearerToken = _configuration["BancoCentralCR:BearerToken"];
 
-            if (string.IsNullOrWhiteSpace(urlBase))
-                throw new InvalidOperationException("BancoCentralCR:UrlBase no está configurado.");
+                if (string.IsNullOrWhiteSpace(url))
+                    return 0m;
 
-            if (string.IsNullOrWhiteSpace(token))
-                throw new InvalidOperationException("BancoCentralCR:BearerToken no está configurado.");
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
 
-            var hoy = DateTime.Today;
-            var fecha = hoy.ToString("yyyy/MM/dd");
+                if (!string.IsNullOrWhiteSpace(bearerToken))
+                {
+                    request.Headers.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+                }
 
-            var endPoint = $"{urlBase}?fechaInicio={fecha}&fechaFin={fecha}&idioma=ES";
+                using var response = await _httpClient.SendAsync(request, ct);
 
-            var clienteBccr = _httpClientFactory.CreateClient("ServicioBccr");
+                if (!response.IsSuccessStatusCode)
+                    return 0m;
 
-            using var request = new HttpRequestMessage(HttpMethod.Get, endPoint);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var content = await response.Content.ReadAsStringAsync(ct);
 
-            var respuesta = await clienteBccr.SendAsync(request, ct);
-            respuesta.EnsureSuccessStatusCode();
+                if (string.IsNullOrWhiteSpace(content))
+                    return 0m;
 
-            var resultado = await respuesta.Content.ReadAsStringAsync(ct);
+                using JsonDocument doc = JsonDocument.Parse(content);
 
-            var opciones = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var data = JsonSerializer.Deserialize<BccrTipoCambioResponse>(resultado, opciones);
+                if (TryFindDecimal(doc.RootElement, out decimal tipoCambio))
+                    return tipoCambio;
 
-            if (data is null)
-                throw new InvalidOperationException("No se pudo deserializar la respuesta del BCCR.");
+                return 0m;
+            }
+            catch
+            {
+                return 0m;
+            }
+        }
 
-            if (!data.Estado)
-                throw new InvalidOperationException($"BCCR respondió estado=false. Mensaje: {data.Mensaje}");
+        private static bool TryFindDecimal(JsonElement element, out decimal value)
+        {
+            value = 0m;
 
-            var tipoCambio = data.Datos?
-                .FirstOrDefault()?
-                .Indicadores?.FirstOrDefault()?
-                .Series?.FirstOrDefault()?
-                .ValorDatoPorPeriodo;
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Number:
+                    if (element.TryGetDecimal(out value))
+                        return true;
+                    break;
 
-            if (tipoCambio is null || tipoCambio <= 0)
-                throw new InvalidOperationException("No se pudo extraer el tipo de cambio de la respuesta del BCCR.");
+                case JsonValueKind.String:
+                    var text = element.GetString();
+                    if (!string.IsNullOrWhiteSpace(text) &&
+                        decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+                        return true;
+                    if (!string.IsNullOrWhiteSpace(text) &&
+                        decimal.TryParse(text, NumberStyles.Any, new CultureInfo("es-CR"), out value))
+                        return true;
+                    break;
 
-            return tipoCambio.Value;
+                case JsonValueKind.Object:
+                    foreach (var prop in element.EnumerateObject())
+                    {
+                        if (TryFindDecimal(prop.Value, out value))
+                            return true;
+                    }
+                    break;
+
+                case JsonValueKind.Array:
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        if (TryFindDecimal(item, out value))
+                            return true;
+                    }
+                    break;
+            }
+
+            return false;
         }
     }
 }

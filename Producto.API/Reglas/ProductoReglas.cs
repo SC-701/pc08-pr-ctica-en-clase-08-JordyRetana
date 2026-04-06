@@ -21,6 +21,10 @@ namespace Reglas
                 throw new ArgumentOutOfRangeException(nameof(precioColones), "El precio no puede ser negativo.");
 
             var tipoCambioVenta = await _tipoCambioServicio.ObtenerTipoCambioVentaHoyAsync(ct);
+
+            if (tipoCambioVenta <= 0)
+                return 0m;
+
             var usd = precioColones / tipoCambioVenta;
 
             return Math.Round(usd, 2, MidpointRounding.AwayFromZero);
